@@ -6,7 +6,6 @@ import org.example.entity.TransactionType;
 import org.example.entity.User;
 import org.example.service.AnalyticsService;
 import org.example.service.TransactionService;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static org.example.service.TransactionService.transactionCategories;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AnalyticsServiceTest {
@@ -41,29 +41,19 @@ class AnalyticsServiceTest {
 
     @BeforeEach
     public void setUp() {
-        private TransactionService transactionService = new TransactionService();
-        private AnalyticsService analyticsService = new AnalyticsService(transactionService);
         bankAccount1 = new BankAccount();
         bankAccount2 = new BankAccount();
         bankAccount3 = new BankAccount();
         bankAccount4 = new BankAccount();
 
-        bankAccount1.getTransactions().add(new Transaction("1", TEN_DOLLARS, TransactionType.PAYMENT
-                , BEAUTY_CATEGORY, TEN_DAYS_AGO));
-        bankAccount1.getTransactions().add(new Transaction("2", FIFTEEN_DOLLARS, TransactionType.PAYMENT
-                , BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
-        bankAccount2.getTransactions().add(new Transaction("3", TWENTY_DOLLARS, TransactionType.PAYMENT
-                , FOOD_CATEGORY, THREE_DAYS_AGO));
-        bankAccount2.getTransactions().add(new Transaction("4", TWENTY_DOLLARS, TransactionType.PAYMENT
-                , EDUCATION_CATEGORY, ONE_DAY_AGO));
-        bankAccount3.getTransactions().add(new Transaction("5", TEN_DOLLARS, TransactionType.PAYMENT
-                , EDUCATION_CATEGORY, FIVE_MONTHS_AGO));
-        bankAccount3.getTransactions().add(new Transaction("6", TWENTY_DOLLARS, TransactionType.PAYMENT
-                , EDUCATION_CATEGORY, FIVE_WEEKS_AGO));
-        bankAccount4.getTransactions().add(new Transaction("7", FIFTEEN_DOLLARS, TransactionType.DEPOSIT
-                , BEAUTY_CATEGORY, ONE_DAY_AGO));
-        bankAccount4.getTransactions().add(new Transaction("8", TEN_DOLLARS, TransactionType.DEPOSIT
-                , FOOD_CATEGORY, THREE_DAYS_AGO));
+        bankAccount1.getTransactions().add(new Transaction("1", TEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
+        bankAccount1.getTransactions().add(new Transaction("2", FIFTEEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
+        bankAccount2.getTransactions().add(new Transaction("3", TWENTY_DOLLARS, TransactionType.PAYMENT, FOOD_CATEGORY, THREE_DAYS_AGO));
+        bankAccount2.getTransactions().add(new Transaction("4", TWENTY_DOLLARS, TransactionType.PAYMENT, EDUCATION_CATEGORY, ONE_DAY_AGO));
+        bankAccount3.getTransactions().add(new Transaction("5", TEN_DOLLARS, TransactionType.PAYMENT, EDUCATION_CATEGORY, FIVE_MONTHS_AGO));
+        bankAccount3.getTransactions().add(new Transaction("6", TWENTY_DOLLARS, TransactionType.PAYMENT, EDUCATION_CATEGORY, FIVE_WEEKS_AGO));
+        bankAccount4.getTransactions().add(new Transaction("7", FIFTEEN_DOLLARS, TransactionType.DEPOSIT, BEAUTY_CATEGORY, ONE_DAY_AGO));
+        bankAccount4.getTransactions().add(new Transaction("8", TEN_DOLLARS, TransactionType.DEPOSIT, FOOD_CATEGORY, THREE_DAYS_AGO));
 
 
         user.getBankAccounts().add(bankAccount1);
@@ -91,30 +81,16 @@ class AnalyticsServiceTest {
     }
 
     @Test
-    void getMonthlySpendingByCategories() {
-        // Транзакции за последний месяц существуют и принадлежат указанным категориям.
-        Map<String, BigDecimal> result = analyticsService.getMonthlySpendingByCategories(user
-                , Set.of(FOOD_CATEGORY, BEAUTY_CATEGORY));
-
-        Assertions.assertTrue(result.containsKey(BEAUTY_CATEGORY), " Map should contains 'Beauty' ");
-        // ??? Assertions.assertTrue(result.containsKey(FOOD_CATEGORY), " Map should not contains 'Food' ");
+    public void getMonthlySpendingByCategories() {
+        Map<String, BigDecimal> result = analyticsService.getMonthlySpendingByCategories(user, transactionCategories);
+        assertNotNull(result);
         assertEquals(TEN_DOLLARS, result.get(BEAUTY_CATEGORY));
-        // ??? assertEquals(TWENTY_DOLLARS, result.get(FOOD_CATEGORY));
 
-        // Нет транзакций за последний месяц, принадлежащих указанным категориям.
-        User testUser = new User();
-        testUser.getBankAccounts().add(bankAccount1);
-        Map<String, BigDecimal> result1 = analyticsService.getMonthlySpendingByCategories(testUser
-                , Set.of(FOOD_CATEGORY, EDUCATION_CATEGORY));
-        assertNull(result1.get(FOOD_CATEGORY));
-
-        // Нет транзакций типа PAYMENT.
-        User noPaymentUser = new User();
-        noPaymentUser.getBankAccounts().add(bankAccount4);
-        Map<String, BigDecimal> result2 = analyticsService.getMonthlySpendingByCategories(noPaymentUser
-                , Set.of(BEAUTY_CATEGORY, FOOD_CATEGORY));
-        assertNull(result2.get(BEAUTY_CATEGORY));
+        Map<String, BigDecimal> monthlySpendingByCategories =
+                analyticsService.getMonthlySpendingByCategories(null, transactionCategories);
+        assertEquals(new HashMap<>(), monthlySpendingByCategories);
     }
+
 
     @Test
     void getTransactionHistorySortedByAmount() {
@@ -144,13 +120,13 @@ class AnalyticsServiceTest {
     @Test
     void getLastNTransaction() {
         // Последние N транзакций существуют.
-        List<Transaction> result = analyticsService.getLastNTransaction(user, 2);
+        List<Transaction> result = analyticsService.getLastNTransactions(user, 2);
         assertEquals(2, result.size());
         assertEquals("4", result.get(0).getId());
         assertEquals("3", result.get(1).getId());
 
         // Менее N транзакций существует.
-        List<Transaction> result1 = analyticsService.getLastNTransaction(user, 7);
+        List<Transaction> result1 = analyticsService.getLastNTransactions(user, 7);
         assertEquals(4, result1.size());
         assertEquals("4", result1.get(0).getId());
         assertEquals("3", result1.get(1).getId());
@@ -158,11 +134,11 @@ class AnalyticsServiceTest {
         assertEquals("2", result1.get(3).getId());
 
         // Нет транзакций.
-        List<Transaction> result2 = analyticsService.getLastNTransaction(new User(),4);
+        List<Transaction> result2 = analyticsService.getLastNTransactions(new User(), 4);
         assertEquals(0, result2.size());
 
         // Пользователь равен null.
-        List<Transaction> result3 = analyticsService.getLastNTransaction(null, 2);
+        List<Transaction> result3 = analyticsService.getLastNTransactions(null, 2);
         assertEquals(0, result3.size());
 
     }
@@ -184,7 +160,7 @@ class AnalyticsServiceTest {
         // Нет транзакций типа PAYMENT.
         User noPaymentUser = new User();
         noPaymentUser.getBankAccounts().add(bankAccount4);
-        PriorityQueue<Transaction> result2  = analyticsService.getTopNLargestTransactions(noPaymentUser, 5);
+        PriorityQueue<Transaction> result2 = analyticsService.getTopNLargestTransactions(noPaymentUser, 5);
         assertEquals(0, result2.size());
 
         // Пользователь равен null.

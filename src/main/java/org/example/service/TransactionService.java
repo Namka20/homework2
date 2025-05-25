@@ -9,7 +9,7 @@ import java.util.Set;
  */
 public class TransactionService {
 
-    public static Set<String> transactionCategories = Set.of(
+    public static final Set<String> transactionCategories = Set.of(
             "Health", "Beauty", "Education");
 
     public Boolean categoryIsExist(String category) {

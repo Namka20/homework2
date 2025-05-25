@@ -1,8 +1,10 @@
 package org.example.entity;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,5 +15,5 @@ public class BankAccount {
     private String id;
     private BigDecimal balance;
     private User owner;
-    private List<Transaction> transactions;
+    private List<Transaction> transactions = new ArrayList<>();
 }
