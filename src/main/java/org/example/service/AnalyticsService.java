@@ -49,15 +49,15 @@ public class AnalyticsService {
      */
     public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories) {
         Map<String, BigDecimal> resultMap = new HashMap<>();
-        Set<String> oneCategory = transactionService.oneCategory(categories);
+        Set<String> validCategories = transactionService.validCategories(categories);
         LocalDateTime monthAgo = LocalDateTime.now().minusMonths(1L);
-        if (user == null || oneCategory.isEmpty()) {
+        if (user == null || validCategories.isEmpty()) {
             return resultMap;
         }
         for (BankAccount bankAccount : user.getBankAccounts()) {
             for (Transaction transaction : bankAccount.getTransactions()) {
-                if (transaction.getType().equals(TransactionType.PAYMENT) &&
-                        oneCategory.contains(transaction.getCategory()) &&
+                if (TransactionType.PAYMENT.equals(transaction.getType()) &&
+                        validCategories.contains(transaction.getCategory()) &&
                         transaction.getCreatedDate().isAfter(monthAgo)) {
                     resultMap.merge(transaction.getCategory(), transaction.getValue(), BigDecimal::add);
                 }
@@ -100,9 +100,9 @@ public class AnalyticsService {
      * @return LinkedHashMap, где ключом является идентификатор транзакции, а значением — объект Transaction
      */
     public List<Transaction> getLastNTransactions(User user, int n) {
-        List<Transaction> listlastTransactions = new ArrayList<>();
+        List<Transaction> listLastTransactions = new ArrayList<>();
         if (user == null) {
-            return listlastTransactions;
+            return listLastTransactions;
         }
         List<Transaction> transactions = new ArrayList<>();
         for (BankAccount bankAccount : user.getBankAccounts()) {
@@ -110,9 +110,9 @@ public class AnalyticsService {
         }
         transactions.sort((t1, t2) -> t2.getCreatedDate().compareTo(t1.getCreatedDate()));
         for (int i = 0; i < Math.min(n, transactions.size()); i++){
-            listlastTransactions.add(transactions.get(i));
+            listLastTransactions.add(transactions.get(i));
         }
-        return listlastTransactions;
+        return listLastTransactions;
     }
 
     /**
