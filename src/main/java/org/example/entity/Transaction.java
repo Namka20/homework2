@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
  * Информация о совершенной банковской транзакции
  */
 @Data
+@AllArgsConstructor
 public class Transaction {
     private String id;
     private BigDecimal value;

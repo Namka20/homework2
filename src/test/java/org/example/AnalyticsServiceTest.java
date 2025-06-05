@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.example.service.TransactionService.transactionCategories;
 import static org.junit.jupiter.api.Assertions.*;
@@ -167,5 +168,30 @@ class AnalyticsServiceTest {
         PriorityQueue<Transaction> result3 = analyticsService.getTopNLargestTransactions(null, 10);
         assertEquals(0, result3.size());
 
+    }
+    @Test
+    public void analyze_performance() {
+
+        List<Transaction> transactions = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .collect(Collectors.toList());
+
+        long startTime = System.currentTimeMillis();
+        transactions.stream()
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .filter(transaction -> transaction.getValue().compareTo(new BigDecimal("1000")) > 0)
+                .sorted(Comparator.comparing(Transaction::getValue))
+                .count();
+        long endTime = System.currentTimeMillis();
+        System.out.println("Sequential stream time: " + (endTime - startTime) + " ms");
+
+        startTime = System.currentTimeMillis();
+        transactions.parallelStream()
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .filter(transaction -> transaction.getValue().compareTo(new BigDecimal("1000")) > 0)
+                .sorted(Comparator.comparing(Transaction::getValue))
+                .count();
+        endTime = System.currentTimeMillis();
+        System.out.println("Parallel stream time: " + (endTime - startTime) + " ms");
     }
 }

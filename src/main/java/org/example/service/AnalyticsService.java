@@ -5,10 +5,12 @@ import org.example.entity.BankAccount;
 import org.example.entity.TransactionType;
 import org.example.entity.User;
 import org.example.entity.Transaction;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Сервис предоставляет аналитику по операциям пользователей
@@ -29,13 +31,12 @@ public class AnalyticsService {
         if (bankAccount == null || !transactionService.categoryIsExist(category)) {
             return result;
         }
-        for (Transaction transaction : bankAccount.getTransactions()) {
-            if (transaction.getType().equals(TransactionType.PAYMENT) &&
-                    transaction.getCreatedDate().isAfter(monthAgo) &&
-                    transaction.getCategory().equals(category)) {
-                result = result.add(transaction.getValue());
-            }
-        }
+        result = bankAccount.getTransactions().stream()
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .filter(transaction -> StringUtils.equals(transaction.getCategory(), category))
+                .filter(transaction -> transaction.getCreatedDate().isAfter(monthAgo))
+                .map(Transaction::getValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         return result;
     }
 
@@ -54,15 +55,12 @@ public class AnalyticsService {
         if (user == null || validCategories.isEmpty()) {
             return resultMap;
         }
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (TransactionType.PAYMENT.equals(transaction.getType()) &&
-                        validCategories.contains(transaction.getCategory()) &&
-                        transaction.getCreatedDate().isAfter(monthAgo)) {
-                    resultMap.merge(transaction.getCategory(), transaction.getValue(), BigDecimal::add);
-                }
-            }
-        }
+        resultMap = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType())
+                        && validCategories.contains(transaction.getCategory())
+                        && transaction.getCreatedDate().isAfter(monthAgo))
+                .collect(Collectors.toMap(Transaction::getCategory, Transaction::getValue, BigDecimal::add));
         return resultMap;
     }
 
@@ -77,18 +75,11 @@ public class AnalyticsService {
         if (user == null) {
             return resultLinkedMap;
         }
-        List<Transaction> transactions = new ArrayList<>();
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (TransactionType.PAYMENT.equals(transaction.getType())) {
-                    transactions.add(transaction);
-                }
-            }
-        }
-        transactions.sort(Comparator.comparing(Transaction::getValue));
-        for (Transaction transaction : transactions) {
-            resultLinkedMap.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
-        }
+        resultLinkedMap = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .sorted(Comparator.comparing(Transaction::getValue))
+                .collect(Collectors.groupingBy(Transaction::getCategory, LinkedHashMap::new, Collectors.toList()));
         return resultLinkedMap;
     }
 
@@ -104,14 +95,11 @@ public class AnalyticsService {
         if (user == null) {
             return listLastTransactions;
         }
-        List<Transaction> transactions = new ArrayList<>();
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            transactions.addAll(bankAccount.getTransactions());
-        }
-        transactions.sort((t1, t2) -> t2.getCreatedDate().compareTo(t1.getCreatedDate()));
-        for (int i = 0; i < Math.min(n, transactions.size()); i++){
-            listLastTransactions.add(transactions.get(i));
-        }
+        listLastTransactions = user.getBankAccounts().stream()
+                    .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                    .sorted(Comparator.comparing(Transaction::getCreatedDate).reversed())
+                    .limit(n)
+                    .collect(Collectors.toList());
         return listLastTransactions;
     }
 
@@ -128,19 +116,12 @@ public class AnalyticsService {
         if (user == null) {
             return transactionPriorityQueue;
         }
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (TransactionType.PAYMENT.equals(transaction.getType())) {
-                    if (transactionPriorityQueue.size() < n)
-                        transactionPriorityQueue.offer(transaction);
-                    else if (transactionPriorityQueue.peek() != null
-                            && transactionPriorityQueue.peek().getValue().compareTo(transaction.getValue()) < 0) {
-                        transactionPriorityQueue.poll();
-                        transactionPriorityQueue.offer(transaction);
-                    }
-                }
-            }
-        }
+        transactionPriorityQueue = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .sorted(Comparator.comparing(Transaction::getValue).reversed()).limit(n)
+                .collect(Collectors.toCollection(() ->new PriorityQueue<>(Comparator.comparing(Transaction::getValue).reversed())));
         return transactionPriorityQueue;
     }
+
 }
