@@ -9,21 +9,21 @@ import java.util.Set;
  */
 public class TransactionService {
 
-    public static Set<String> transactionCategories = Set.of(
+    public static final Set<String> transactionCategories = Set.of(
             "Health", "Beauty", "Education");
 
     public Boolean categoryIsExist(String category) {
-        return transactionCategories.contains(category);
+        return category != null && transactionCategories.contains(category);
     }
 
-    public Set<String> oneCategory(Set<String> categories) {
-        Set<String> oneCategory = new HashSet<>();
+    public Set<String> validCategories(Set<String> categories) {
+        Set<String> validCategories = new HashSet<>();
         for (String category : categories) {
             if (categoryIsExist(category)) {
-                oneCategory.add(category);
+                validCategories.add(category);
             }
         }
-        return oneCategory;
+        return validCategories;
     }
 
 }

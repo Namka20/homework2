@@ -1,5 +1,6 @@
 package org.example.service;
 
+import lombok.RequiredArgsConstructor;
 import org.example.entity.BankAccount;
 import org.example.entity.TransactionType;
 import org.example.entity.User;
@@ -12,8 +13,9 @@ import java.util.*;
 /**
  * Сервис предоставляет аналитику по операциям пользователей
  */
+@RequiredArgsConstructor
 public class AnalyticsService {
-    private TransactionService transactionService;
+    private final TransactionService transactionService;
 
     /**
      * Вывод суммы потраченных средств на категорию за последний месяц
@@ -24,12 +26,12 @@ public class AnalyticsService {
     public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category) {
         LocalDateTime monthAgo = LocalDateTime.now().minusMonths(1L);
         BigDecimal result = BigDecimal.ZERO;
-        if (bankAccount == null || transactionService.categoryIsExist(category)) {
+        if (bankAccount == null || !transactionService.categoryIsExist(category)) {
             return result;
         }
         for (Transaction transaction : bankAccount.getTransactions()) {
             if (transaction.getType().equals(TransactionType.PAYMENT) &&
-                    transaction.getCreatedDate().equals(monthAgo) &&
+                    transaction.getCreatedDate().isAfter(monthAgo) &&
                     transaction.getCategory().equals(category)) {
                 result = result.add(transaction.getValue());
             }
@@ -47,16 +49,16 @@ public class AnalyticsService {
      */
     public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories) {
         Map<String, BigDecimal> resultMap = new HashMap<>();
-        Set<String> oneCategory = transactionService.oneCategory(categories);
+        Set<String> validCategories = transactionService.validCategories(categories);
         LocalDateTime monthAgo = LocalDateTime.now().minusMonths(1L);
-        if (user == null || oneCategory.isEmpty()) {
+        if (user == null || validCategories.isEmpty()) {
             return resultMap;
         }
         for (BankAccount bankAccount : user.getBankAccounts()) {
             for (Transaction transaction : bankAccount.getTransactions()) {
-                if (transaction.getType().equals(TransactionType.PAYMENT) &&
-                        oneCategory.contains(transaction.getCategory()) &&
-                        transaction.getCreatedDate().equals(monthAgo)) {
+                if (TransactionType.PAYMENT.equals(transaction.getType()) &&
+                        validCategories.contains(transaction.getCategory()) &&
+                        transaction.getCreatedDate().isAfter(monthAgo)) {
                     resultMap.merge(transaction.getCategory(), transaction.getValue(), BigDecimal::add);
                 }
             }
@@ -98,19 +100,19 @@ public class AnalyticsService {
      * @return LinkedHashMap, где ключом является идентификатор транзакции, а значением — объект Transaction
      */
     public List<Transaction> getLastNTransactions(User user, int n) {
-        List<Transaction> listlastTransactions = new ArrayList<>();
+        List<Transaction> listLastTransactions = new ArrayList<>();
         if (user == null) {
-            return listlastTransactions;
+            return listLastTransactions;
         }
         List<Transaction> transactions = new ArrayList<>();
         for (BankAccount bankAccount : user.getBankAccounts()) {
             transactions.addAll(bankAccount.getTransactions());
         }
         transactions.sort((t1, t2) -> t2.getCreatedDate().compareTo(t1.getCreatedDate()));
-        for (int i = 0; i < n; i++) {
-            listlastTransactions.add(transactions.get(i));
+        for (int i = 0; i < Math.min(n, transactions.size()); i++){
+            listLastTransactions.add(transactions.get(i));
         }
-        return listlastTransactions;
+        return listLastTransactions;
     }
 
     /**
