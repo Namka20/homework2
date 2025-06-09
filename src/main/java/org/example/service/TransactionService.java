@@ -8,10 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Collectors;
 
 /**
@@ -93,5 +90,21 @@ public class TransactionService {
      */
     public List<Transaction> createTransactionList(Supplier<List<Transaction>> supplier) {
         return supplier.get();
+    }
+
+    /**
+     * Объединение списков транзакций в один список
+     *
+     * @param list1  - 1-й список транзакций
+     * @param list2  - 2-й список транзакций
+     * @param merger - функция объединения транзакций
+     * @return возвращает объединённый список транзакций
+     */
+    public List<Transaction> mergeTransactionList(List<Transaction> list1, List<Transaction> list2,
+                                                  BiFunction<List<Transaction>, List<Transaction>,
+                                                          List<Transaction>> merger) {
+        if (list1 == null || list2 == null)
+            return Collections.emptyList();
+        return merger.apply(list1, list2);
     }
 }
