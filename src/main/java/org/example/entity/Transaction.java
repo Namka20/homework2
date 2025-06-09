@@ -2,8 +2,6 @@ package org.example.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -11,6 +9,7 @@ import java.time.LocalDateTime;
  * Информация о совершенной банковской транзакции
  */
 @Data
+@AllArgsConstructor
 public class Transaction {
     private String id;
     private BigDecimal value;
