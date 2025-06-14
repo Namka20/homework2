@@ -107,8 +107,11 @@ public class TransactionService {
     public List<Transaction> mergeTransactionList(List<Transaction> list1, List<Transaction> list2,
                                                   BiFunction<List<Transaction>, List<Transaction>,
                                                           List<Transaction>> merger) {
-        if (list1 == null || list2 == null || merger == null)
+        if (merger == null) {
             return Collections.emptyList();
-        return merger.apply(list1, list2);
+        }
+        return merger.apply(
+                list1 != null ? list1 : Collections.emptyList(),
+                list2 != null ? list2 : Collections.emptyList());
     }
 }
