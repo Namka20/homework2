@@ -41,7 +41,7 @@ public class TransactionService {
      * @return список транзакций, удовлетворяющих условию
      */
     public List<Transaction> filterTransactions(User user, Predicate<Transaction> predicate) {
-        if (user == null) {
+        if (user == null || predicate == null) {
             return Collections.emptyList();
         }
         return user.getBankAccounts().stream()
@@ -58,7 +58,7 @@ public class TransactionService {
      * @return список строковых представлений транзакций
      */
     public List<String> transformTransactions(User user, Function<Transaction, String> function) {
-        if (user == null) {
+        if (user == null || function == null) {
             return Collections.emptyList();
         }
         return user.getBankAccounts().stream()
@@ -74,7 +74,7 @@ public class TransactionService {
      * @param consumer - функция обработки
      */
     public void processTransactions(User user, Consumer<Transaction> consumer) {
-        if (user == null) {
+        if (user == null || consumer == null) {
             return;
         }
         user.getBankAccounts().stream()
@@ -89,7 +89,11 @@ public class TransactionService {
      * @return созданный список транзакций
      */
     public List<Transaction> createTransactionList(Supplier<List<Transaction>> supplier) {
+        if (supplier == null) {
+            return Collections.emptyList();
+        }
         return supplier.get();
+
     }
 
     /**
@@ -103,7 +107,7 @@ public class TransactionService {
     public List<Transaction> mergeTransactionList(List<Transaction> list1, List<Transaction> list2,
                                                   BiFunction<List<Transaction>, List<Transaction>,
                                                           List<Transaction>> merger) {
-        if (list1 == null || list2 == null)
+        if (list1 == null || list2 == null || merger == null)
             return Collections.emptyList();
         return merger.apply(list1, list2);
     }
